@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: buktravels
+      POSTGRES_USER: buktravels
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buktravels -d buktravels"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ${BUKTRAVELS_API_IMAGE:-buktravels-api:latest}
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: BUKTRAVELS
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?Set APP_KEY}
+      APP_URL: ${APP_URL:?Set APP_URL}
+      FRONTEND_URLS: ${APP_URL}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: buktravels
+      DB_USERNAME: buktravels
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      SANCTUM_EXPIRATION: 480
+      ADMIN_NAME: ${ADMIN_NAME:-BUKTRAVELS Administrator}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploaded_media:/var/www/html/storage/app/public
+
+  frontend:
+    image: ${BUKTRAVELS_WEB_IMAGE:-buktravels-web:latest}
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_data:
+  uploaded_media:

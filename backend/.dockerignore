@@ -1,0 +1,6 @@
+.env
+vendor
+storage/logs/*
+database/database.sqlite
+tests
+node_modules
