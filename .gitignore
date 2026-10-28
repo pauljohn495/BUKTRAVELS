@@ -10,3 +10,4 @@ Thumbs.db
 /backups/
 /frontend/playwright-report/
 /frontend/test-results/
+/compose.yaml
